@@ -6,6 +6,9 @@ use deno_core::Extension;
 use deno_core::OpState;
 use deno_io::StdFileResource;
 use std::io::Error;
+use rustyline::{Editor, Cmd, Modifiers, KeyEvent, KeyCode};
+use rustyline::config::Configurer;
+use rustyline::error::ReadlineError;
 
 #[cfg(unix)]
 use nix::sys::termios;
@@ -39,6 +42,7 @@ pub fn init() -> Extension {
       op_stdin_set_raw::decl(),
       op_isatty::decl(),
       op_console_size::decl(),
+      op_read_line_prompt::decl(),
     ])
     .build()
 }
@@ -270,4 +274,19 @@ pub fn console_size(
       })
     }
   }
+}
+
+#[op(fast)]
+pub fn op_read_line_prompt(prompt_text: String, default_value: String) -> Result<Option<String>, AnyError> {
+    let mut editor = Editor::<()>::new().expect("Failed to create editor.");
+
+    editor.set_keyseq_timeout(1);
+    editor.bind_sequence(KeyEvent(KeyCode::Esc, Modifiers::empty()), Cmd::Interrupt);
+
+    let read_result = editor.readline_with_initial(&prompt_text, (&default_value, ""));
+    match read_result {
+        Ok(line) => Ok(Some(line)),
+        Err(ReadlineError::Interrupted | ReadlineError::Eof) => Ok(None),
+        Err(err) => Err(err.into()),
+    }
 }

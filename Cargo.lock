@@ -1304,6 +1304,7 @@ dependencies = [
  "once_cell",
  "regex",
  "ring",
+ "rustyline",
  "serde",
  "signal-hook-registry",
  "termcolor",
